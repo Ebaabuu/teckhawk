@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
@@ -67,18 +68,38 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# 5.5 Initialize the cooldown timer in session state
+if "last_msg_time" not in st.session_state:
+    st.session_state.last_msg_time = 0
+
 # 6. Handle new user input
 if user_query := st.chat_input("Ask an IT question..."):
-    # Show user message on screen
-    st.chat_message("user").markdown(user_query)
-    st.session_state.messages.append({"role": "user", "content": user_query})
     
-    # Show a loading spinner while the AI searches
-    with st.spinner("Searching official IT Manuals..."):
-        # The LCEL chain returns the exact text string, no need to parse a dictionary!
-        ai_answer = rag_chain.invoke(user_query)
-    
-    # Show AI response on screen
-    with st.chat_message("assistant"):
-        st.markdown(ai_answer)
-    st.session_state.messages.append({"role": "assistant", "content": ai_answer})
+    # DEFENSE 1: The Cooldown Timer (5 seconds)
+    current_time = time.time()
+    if current_time - st.session_state.last_msg_time < 5:
+        st.warning("⏳ Please wait a few seconds before sending another message.")
+    else:
+        # Update the timer to the current time
+        st.session_state.last_msg_time = current_time
+        
+        # Show user message on screen
+        st.chat_message("user").markdown(user_query)
+        st.session_state.messages.append({"role": "user", "content": user_query})
+        
+        # Show a loading spinner while the AI searches
+        with st.spinner("Searching official IT Manuals..."):
+            try:
+                # Send the query through the LangChain pipeline
+                ai_answer = rag_chain.invoke(user_query)
+                
+            except Exception as e:
+                # DEFENSE 2: The Safety Net
+                # If Google crashes or rate-limits us, show a polite error instead of crashing the app
+                ai_answer = "The system is currently receiving too many requests. Please try again in a minute."
+                print(f"API Error encountered: {e}") # Logs the real error in your terminal
+        
+        # Show AI response on screen
+        with st.chat_message("assistant"):
+            st.markdown(ai_answer)
+        st.session_state.messages.append({"role": "assistant", "content": ai_answer})
