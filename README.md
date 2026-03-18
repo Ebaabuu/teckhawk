@@ -19,7 +19,8 @@ A local Retrieval-Augmented Generation (RAG) prototype built for the Edwards Cam
 	Start the Streamlit interface:
 	`python -m streamlit run app.py`
 	
-Delete Later: To add to github, run the following in terminal:
+## Delete Later: 
+**To add to github, run the following in terminal:**
 1. git add [Name of file changed]
 2. git commit -m "Message to specify changes"
 3. git push
