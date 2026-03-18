@@ -1,0 +1,1 @@
+To reset your Edwards Campus password, navigate to the portal and click Forgot Password. The help desk number is 555-0199.
